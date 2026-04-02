@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{{ site.name }} — генератор</title>
+    <meta name="description" content="Сгенерировать страницы матчей: вчера, сегодня, завтра." />
+    <link rel="stylesheet" href="/static/styles.css" />
+    <link rel="canonical" href="{{ site.url }}/" />
+    <script type="application/ld+json">{{ org_schema | tojson }}</script>
+  </head>
+  <body>
+    <header class="header">
+      <div class="container header__inner">
+        <div class="brand">{{ site.name }}</div>
+        <nav class="nav">
+          <a class="nav__link" href="/yesterday">Вчера</a>
+          <a class="nav__link" href="/today">Сегодня</a>
+          <a class="nav__link" href="/tomorrow">Завтра</a>
+        </nav>
+      </div>
+    </header>
+
+    <main class="container">
+      <section class="hero">
+        <h1 class="hero__title">Генератор страниц матчей</h1>
+        <p class="hero__subtitle">
+          Нажмите кнопку — сервер подтянет матчи из PandaScore и сгенерирует 3 статические страницы без параметров URL.
+        </p>
+
+        <form id="genForm" class="actions">
+          <button class="btn btn--primary" type="submit">Сгенерировать сайт</button>
+          <div id="status" class="status" aria-live="polite"></div>
+        </form>
+      </section>
+
+      <section class="card">
+        <h2 class="card__title">Что будет создано</h2>
+        <ul class="list">
+          <li><code>/yesterday</code> — матчи за вчера ({{ site.timezone }})</li>
+          <li><code>/today</code> — матчи за сегодня ({{ site.timezone }})</li>
+          <li><code>/tomorrow</code> — матчи на завтра ({{ site.timezone }})</li>
+        </ul>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <div class="container footer__inner">
+        <span class="muted">Источник данных: PandaScore</span>
+      </div>
+    </footer>
+
+    <script>
+      const form = document.getElementById("genForm");
+      const statusEl = document.getElementById("status");
+
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        statusEl.textContent = "Генерация…";
+        try {
+          const r = await fetch("/api/generate", { method: "POST" });
+          if (!r.ok) {
+            const t = await r.text();
+            throw new Error(t || `HTTP ${r.status}`);
+          }
+          const data = await r.json();
+          statusEl.textContent = "Готово. Открываю страницу “Сегодня”…";
+          window.location.href = data.redirect || "/today";
+        } catch (err) {
+          statusEl.textContent = "Ошибка: " + (err && err.message ? err.message : String(err));
+        }
+      });
+    </script>
+  </body>
+</html>

@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{{ page.title }}</title>
+    <meta name="description" content="{{ page.description }}" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="{{ page.title }}" />
+    <meta property="og:description" content="{{ page.description }}" />
+    <meta property="og:url" content="{{ page.canonical }}" />
+
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="{{ page.title }}" />
+    <meta name="twitter:description" content="{{ page.description }}" />
+
+    <link rel="canonical" href="{{ page.canonical }}" />
+    <link rel="stylesheet" href="/static/styles.css" />
+
+    <!-- переменная микроразметка schema.org -->
+    <script type="application/ld+json">{{ org_schema | tojson }}</script>
+  </head>
+  <body>
+    <header class="header">
+      <div class="container header__inner">
+        <div class="brand"><a class="brand__link" href="/">{{ site.name }}</a></div>
+        <nav class="nav">
+          <a class="nav__link {% if page.day_key == 'yesterday' %}nav__link--active{% endif %}" href="/yesterday">Вчера</a>
+          <a class="nav__link {% if page.day_key == 'today' %}nav__link--active{% endif %}" href="/today">Сегодня</a>
+          <a class="nav__link {% if page.day_key == 'tomorrow' %}nav__link--active{% endif %}" href="/tomorrow">Завтра</a>
+        </nav>
+      </div>
+    </header>
+
+    <main class="container">
+      <section class="hero hero--compact">
+        <h1 class="hero__title">{{ page.title }}</h1>
+        <p class="hero__subtitle">
+          Таймзона: <strong>{{ site.timezone }}</strong>. Сгенерировано: <time datetime="{{ site.generated_at_utc }}">{{ site.generated_at_utc }}</time>.
+        </p>
+      </section>
+
+      <section class="card">
+        <h2 class="card__title">Матчи</h2>
+
+        {% if matches|length == 0 %}
+          <p class="muted">Нет матчей в выбранный день (по данным PandaScore).</p>
+        {% else %}
+          <div class="grid">
+            {% for m in matches %}
+              <article class="match" itemscope itemtype="http://schema.org/SportsEvent">
+                <div class="match__meta">
+                  <div class="pill">{{ m.videogame.name or "Esports" }}</div>
+                  {% if m.league.name %}<div class="pill pill--ghost">{{ m.league.name }}</div>{% endif %}
+                  <div class="pill pill--ghost">{{ m.status }}</div>
+                </div>
+
+                <h3 class="match__title">
+                  <span itemprop="name">{{ m.name or (m.teams[0].name ~ " vs " ~ m.teams[1].name if m.teams|length >= 2 else ("Match #" ~ m.id)) }}</span>
+                </h3>
+
+                {% if m.begin_at %}
+                  <meta itemprop="startDate" content="{{ m.begin_at }}" />
+                  <div class="match__time">
+                    Начало (UTC): <time datetime="{{ m.begin_at }}">{{ m.begin_at }}</time>
+                  </div>
+                {% endif %}
+
+                {% if m.teams|length >= 1 %}
+                  <div class="teams">
+                    <div class="team" itemprop="homeTeam" itemscope itemtype="http://schema.org/SportsTeam">
+                      <span itemprop="name">{{ m.teams[0].name }}</span>
+                    </div>
+                    {% if m.teams|length >= 2 %}
+                      <div class="teams__vs">vs</div>
+                      <div class="team" itemprop="awayTeam" itemscope itemtype="http://schema.org/SportsTeam">
+                        <span itemprop="name">{{ m.teams[1].name }}</span>
+                      </div>
+                    {% endif %}
+                  </div>
+                {% endif %}
+
+                <div class="match__links">
+                  {% if m.streams and m.streams|length > 0 %}
+                    {% set s = m.streams[0] %}
+                    {% if s.raw_url %}
+                      <a class="link" href="{{ s.raw_url }}" target="_blank" rel="noopener">Трансляция</a>
+                    {% endif %}
+                  {% endif %}
+                </div>
+              </article>
+            {% endfor %}
+          </div>
+        {% endif %}
+      </section>
+    </main>
+
+    <footer class="footer">
+      <div class="container footer__inner">
+        <span class="muted">Источник данных: PandaScore</span>
+      </div>
+    </footer>
+  </body>
+</html>
+
